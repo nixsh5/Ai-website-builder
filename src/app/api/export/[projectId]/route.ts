@@ -1,14 +1,21 @@
 import JSZip from "jszip";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 import { buildStaticSite } from "@/lib/export/build-static-site";
 
-type Props = {
+type RouteContext = {
   params: Promise<{ projectId: string }>;
 };
 
-export async function GET(_request: Request, { params }: Props) {
+type ExportSection = {
+  type: string;
+  content: Prisma.JsonValue;
+};
+
+export async function GET(_request: Request, { params }: RouteContext) {
   const { projectId } = await params;
 
   const project = await prisma.project.findUnique({
@@ -24,14 +31,16 @@ export async function GET(_request: Request, { params }: Props) {
     return new Response("Project not found", { status: 404 });
   }
 
+  const sections: ExportSection[] = project.sections.map((section) => ({
+    type: section.type,
+    content: section.content as Prisma.JsonValue,
+  }));
+
   const { html, css } = buildStaticSite({
     businessName: project.businessName,
     heroImageUrl: project.heroImageUrl,
     theme: project.theme,
-    sections: project.sections.map((section) => ({
-      type: section.type,
-      content: section.content,
-    })),
+    sections,
   });
 
   const zip = new JSZip();
@@ -46,6 +55,7 @@ export async function GET(_request: Request, { params }: Props) {
       const imageBuffer = await readFile(imagePath);
       zip.file("assets/hero.png", imageBuffer);
     } catch {
+      // ignore missing local image during export
     }
   }
 
