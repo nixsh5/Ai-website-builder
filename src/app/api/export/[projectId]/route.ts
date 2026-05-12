@@ -1,7 +1,6 @@
 import JSZip from "jszip";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { buildStaticSite } from "@/lib/export/build-static-site";
@@ -10,10 +9,8 @@ type RouteContext = {
   params: Promise<{ projectId: string }>;
 };
 
-type ExportSection = {
-  type: string;
-  content: Prisma.JsonValue;
-};
+type BuildStaticSiteInput = Parameters<typeof buildStaticSite>[0];
+type ExportSection = BuildStaticSiteInput["sections"][number];
 
 export async function GET(_request: Request, { params }: RouteContext) {
   const { projectId } = await params;
@@ -33,7 +30,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
 
   const sections: ExportSection[] = project.sections.map((section) => ({
     type: section.type,
-    content: section.content as Prisma.JsonValue,
+    content: section.content as ExportSection["content"],
   }));
 
   const { html, css } = buildStaticSite({
@@ -55,7 +52,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
       const imageBuffer = await readFile(imagePath);
       zip.file("assets/hero.png", imageBuffer);
     } catch {
-      // ignore missing local image during export
+      // ignore missing generated image
     }
   }
 
