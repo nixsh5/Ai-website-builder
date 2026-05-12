@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  businessName   String
+  category       String
+  targetAudience String
+  tone           String
+  status         ProjectStatus @default(DRAFT)
+  theme          WebsiteTheme  @default(MODERN)
+  heroImageUrl   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  services ProjectService[]
+  sections WebsiteSection[]
+  images   GeneratedImage[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model ProjectService {
+  id        String   @id @default(cuid())
+  projectId String
+  name      String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model WebsiteSection {
+  id        String      @id @default(cuid())
+  projectId String
+  type      SectionType
+  label     String
+  position  Int
+  visible   Boolean     @default(true)
+  content   Json
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, position])
+  @@index([projectId, type])
+}
+
+model GeneratedImage {
+  id        String    @id @default(cuid())
+  projectId String
+  type      ImageType @default(HERO)
+  prompt    String
+  imageUrl  String
+  createdAt DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, type])
+  @@index([projectId, createdAt])
+}
+
+enum ProjectStatus {
+  DRAFT
+  GENERATED
+  PUBLISHED
+}
+
+enum SectionType {
+  HERO
+  ABOUT
+  SERVICES
+  FAQ
+  CTA
+  TESTIMONIALS
+  CONTACT
+  SEO
+}
+
+enum ImageType {
+  HERO
+  BANNER
+  GALLERY
+}
+
+enum WebsiteTheme {
+  MODERN
+  ELEGANT
+  BOLD
+  MINIMAL
+}
