@@ -28,10 +28,12 @@ export async function GET(_request: Request, { params }: RouteContext) {
     return new Response("Project not found", { status: 404 });
   }
 
-  const sections: ExportSection[] = project.sections.map((section) => ({
-    type: section.type,
-    content: section.content as ExportSection["content"],
-  }));
+  const sections: ExportSection[] = project.sections.map(
+    (section: (typeof project.sections)[number]) => ({
+      type: section.type,
+      content: section.content as ExportSection["content"],
+    })
+  );
 
   const { html, css } = buildStaticSite({
     businessName: project.businessName,
