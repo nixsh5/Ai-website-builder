@@ -26,7 +26,6 @@ export async function createProject(formData: FormData) {
   const project = await prisma.project.create({
     data: {
       userId: dbUser.id,
-      title,
       businessName,
       category,
       targetAudience,
